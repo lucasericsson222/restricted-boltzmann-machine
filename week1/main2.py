@@ -1,4 +1,8 @@
-
+# ---------------------------------------
+# This file is just an attempt to use the numbers given in the 
+# actual research paper, since I was wondering if that could be causing the 
+# discrepancies in the numbers I am getting.
+# ---------------------------------------
 import numpy as np
 
 W = np.matrix([ [0, -1, 2], [-1, 0, 2], [2, 2, 0] ])

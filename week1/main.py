@@ -8,7 +8,7 @@ def sigmoid(x):
     return np.exp(-np.logaddexp(0, -x))
 
 def energy(v: np.matrix, h: np.matrix):
-    return -1 * (h.T @ W @ v + hidden_biases.T @ h + visible_biases.T @ v )[0,0]
+    return -1 * (v.T @ W @ h + hidden_biases.T @ h + visible_biases.T @ v )[0,0]
 
 def probHgivenV(v: np.matrix, h:np.matrix):
     product = 1
@@ -23,13 +23,15 @@ def probVgivenH(v:np.matrix, h:np.matrix):
     return product
 
 Z = 0
-
 for i1 in range(0, 2):
     for i2 in range(0, 2):
         for i3 in range(0, 2):
             for j1 in range(0, 2):
                 for j2 in range(0, 2):
                     for j3 in range(0, 2):
+                        print("V: " + str(np.matrix([i1, i2, i3]).T))
+                        print("H: " + str(np.matrix([j1, j2, j3]).T))
+                        print(energy(np.matrix([i1, i2, i3]).T, np.matrix([j1, j2, j3]).T))
                         Z += np.exp(-1 * energy(np.matrix([i1, i2, i3]).T, np.matrix([j1, j2, j3]).T))
 
 def softplus(x):
@@ -51,6 +53,7 @@ def probV2(v: np.matrix):
             for i3 in range(0, 2):
                 inner_sum += np.exp(-1 * energy(v, np.matrix([i1, i2, i3]).T))
     return inner_sum / Z
+
 
 print("----------------")
 print("Brute Force Method")
@@ -129,3 +132,8 @@ for i in range(0, 8):
     print(binnum + ": " + str(res[i]))
 
 print("----------------")
+
+# todo:
+# * do everything inside a class
+# * have later gibbs samples be based off of the previous ones
+# * put in the training as well
