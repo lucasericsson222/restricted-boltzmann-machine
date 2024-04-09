@@ -19,5 +19,5 @@ This RBM currently implements:
 - Learning rate of 0.01
   
 all advised from the following paper:
-[https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf](A Practical Guide to Training
-Restricted Boltzmann Machines)
+[A Practical Guide to Training
+Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf)
