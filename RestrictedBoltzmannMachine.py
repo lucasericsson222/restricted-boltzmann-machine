@@ -18,7 +18,7 @@ class RestrictedBoltzmannMachine:
             for h in it.product(range(2), repeat=self.hidden_biases.size):
                 self.Z += np.exp(-1 * self.energy(np.matrix([v[0], v[1], v[2]]).T, np.matrix([h[0], h[1], h[2]]).T))
     
-    def sigmoid(x):  
+    def sigmoid(x):
         return np.exp(-np.logaddexp(0, -x))
     
     def energy(self, v: np.matrix, h: np.matrix):
@@ -96,12 +96,12 @@ class RestrictedBoltzmannMachine:
         res = [val / count for val in res]
         return res
 
-    def constrastive_divergence_step(self, v_data: np.matrix):
+    def constrastive_divergence_step(self, v_data: np.matrix, k = 5):
 
         h_data =self.h_from_v(v_data)
         v_sample = self.v_from_h(h_data)
 
-        for i in range(0,4):
+        for _ in range(0, k - 1):
             h_temp = self.h_from_v(v_sample)
             v_sample = self.v_from_h(h_temp)
         
@@ -111,47 +111,73 @@ class RestrictedBoltzmannMachine:
         self.weights += weights_dif
         self.hidden_biases += self.learning_rate * (h_data - h_sample).sum(axis=1) / self.minibatchsize
         self.visible_biases += self.learning_rate * (v_data - v_sample).sum(axis=1) / self.minibatchsize
+        return v_data, v_sample
     
-    def contrastive_divergence(self, training_data: np.matrix, num_epochs=10):
+    def contrastive_divergence(self, training_data: np.matrix, validation_data: np.matrix, num_epochs=10, k=5):
         print(training_data.shape)
         w_diffs = [100] # temp value that doesn't ever get used, but prevents error on first while loop run
         epoch = 0
         while w_diffs[-1] > 10**(-3):
             w_old = self.weights.copy()
             print(f"Epoch: {epoch}")
+            sqrd_recon_error = 0
             for i in range(0, 100):
                 
                 j = i * self.minibatchsize 
 
-                self.constrastive_divergence_step(np.matrix(training_data[j:j+self.minibatchsize]).T)
+                v_data, v_recon = self.constrastive_divergence_step(np.matrix(training_data[j:j+self.minibatchsize]).T, k)
+                if i == 99:
+                    sqrd_recon_error = self.calculate_squared_reconstruction_error(v_data, v_recon)
+
             cur_diff = self.calculate_relative_mean_absolute(w_old)
 
             # log changes
             print(f"current_weight_diff: {cur_diff}")
-            average_reconstruction_error = self.calculate_reconstruction_error(training_data)
             average_weight = self.calculate_average_weight()
-            print(f"average_reconstruction_error: {average_reconstruction_error}")
-            wandb.log({"weight_diff": cur_diff, "average_weight": average_weight, "average_reconstruction_error": average_reconstruction_error})
+            print(f"sqrd_recon_error: {sqrd_recon_error}")
+            data_average_free_energy, validation_average_free_energy, free_energy_ratio = self.calculate_sampled_average_free_energy(training_data, validation_data)
+            wandb.log({ 
+                "weight_diff": cur_diff, 
+                "average_weight": average_weight, 
+                "mean_squared_reconstruction_error": sqrd_recon_error, 
+                "training_data_average_free_energy": data_average_free_energy, 
+                "validation_data_average_free_energy": validation_average_free_energy, 
+                "free_energy_ratio_training_over_validation": free_energy_ratio 
+            })
 
             w_diffs.append(cur_diff)
             if epoch == num_epochs - 1:
                 break
             epoch += 1
 
-    def calculate_reconstruction_error(self, data, num_gibbs_steps=100, num_trials=100): 
+
+    def calculate_squared_reconstruction_error(self, v_data, v_recon):
+        e = (v_data - v_recon)
+        return np.sum(e.T @ e) / v_data.shape[0] / v_data.shape[1]
+
+    def calculate_pixel_reconstruction_error(self, data, num_gibbs_steps=100, num_trials=100): 
         myin = np.matrix(data[np.random.randint(0,data.shape[0])])
         inimg = myin.reshape(28,28).copy()
         inimg[14:, :] = 0
 
-        out = self.gibbs_sample_v(np.matrix(inimg.reshape(1, 28*28)).T, num_gibbs_steps)
+        out = self.conditional_gibbs_sample(np.matrix(inimg.reshape(1, 28*28)).T, num_gibbs_steps)
         for i in range(0, num_trials):
-            out += self.gibbs_sample_v(np.matrix(inimg.reshape(1, 28*28)).T, num_gibbs_steps)
+            out += self.conditional_gibbs_sample(np.matrix(inimg.reshape(1, 28*28)).T, num_gibbs_steps)
         out[0, 392:] = out[0, 392:] / (num_trials + 1)
 
         return np.sum(np.abs((myin.T) - out)) / myin.shape[1]
     
-    def calculate_sampled_average_free_energy(data, num_samples=100) -> float:
-        return
+    def calculate_sampled_average_free_energy(self, data: np.matrix, validation_data: np.matrix, num_samples=10) -> float:
+        data_sum = 0
+        val_data_sum = 0
+        for _ in range(0, num_samples):
+            v_data = data[np.random.randint(0, data.shape[0])]
+            v_val_data = data[np.random.randint(0, validation_data.shape[0])]
+            data_sum += self.free_energy(np.matrix(v_data).T)
+            val_data_sum += self.free_energy(np.matrix(v_val_data).T)
+        return data_sum/num_samples, val_data_sum/num_samples, data_sum / val_data_sum
+        
+
 
     def free_energy(self, v: np.matrix) -> float:
         def x_j(j: int) -> float:
