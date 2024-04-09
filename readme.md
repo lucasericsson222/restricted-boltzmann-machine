@@ -5,7 +5,7 @@ how Restricted Boltzmann Machines (RBMs) work.
 It implements CD-k with numpy along with Gibb's Block Sampling.
 
 The weights are formulated in this machine as
-$$ v.T W h $$.
+$v^T \cdot W \cdot h$
 
 All vectors that are passed in should be column vectors.
 
