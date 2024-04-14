@@ -5,7 +5,7 @@ how Restricted Boltzmann Machines (RBMs) work.
 It implements CD-k with numpy along with Gibb's Block Sampling.
 
 The weights are formulated in this machine as
-$$ v.T W h $$.
+$v^T \cdot W \cdot h$
 
 All vectors that are passed in should be column vectors.
 
@@ -19,5 +19,5 @@ This RBM currently implements:
 - Learning rate of 0.01
   
 all advised from the following paper:
-[https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf](A Practical Guide to Training
-Restricted Boltzmann Machines)
+[A Practical Guide to Training
+Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf)
