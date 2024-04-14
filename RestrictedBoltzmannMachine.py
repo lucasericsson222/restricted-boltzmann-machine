@@ -81,7 +81,7 @@ class RestrictedBoltzmannMachine:
         for _ in range(0, k):
             h = self.h_from_v(out)
             out = self.v_from_h(h)
-            out[:392] = init_v[:392]
+            out[:28*28] = init_v[:28*28]
         return out
 
     def prob_v_gibbs_sampling(self) -> list[float]:
